@@ -76,7 +76,7 @@ pre{white-space:pre-wrap;font:inherit}.expo-grid{display:grid;grid-template-colu
 </div>
 <div id="instructionStatus" class="status hidden" style="margin-top:10px"></div>
 </div>
-<div id="directAIStatus" class="status hidden" style="margin-bottom:12px"></div>
+<div id="directAIStatus" class="status hidden" style="margin-bottom:12px"></div><div id="aiDiagnostic" class="muted hidden" style="margin-bottom:12px"></div>
 <div class="tabs">
 <button class="tab active" data-tab="feynman">🧠 Feynman</button>
 <button class="tab" data-tab="daily">🏠 Vida cotidiana</button>
@@ -325,10 +325,16 @@ async function askDirectAI(task, question="", extra=""){
       })
     });
     const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data.error||"No se pudo conectar con la IA.");
+    if(!response.ok){
+      const detail = data.error || data.message || ("HTTP "+response.status);
+      throw new Error(detail);
+    }
     showAIStatus("✓ Respuesta generada dentro de Feynman Lab.",false);
     return data.text||"La IA no devolvió texto.";
-  }catch(err){showAIStatus("⚠️ "+err.message,true);return null;}
+  }catch(err){
+    showAIStatus("⚠️ "+err.message,true);
+    return null;
+  }
 }
 function showAIStatus(message,error){
   const el=$("directAIStatus"); if(!el)return;
