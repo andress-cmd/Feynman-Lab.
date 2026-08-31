@@ -18,15 +18,6 @@ input[type=file]{display:none}button{border:0;border-radius:10px;padding:11px 15
 textarea{width:100%;min-height:160px;border:1px solid var(--line);border-radius:12px;padding:13px;resize:vertical;font:inherit}
 .result{background:#fbfcff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:12px}.result h3{color:#1f3fa8}.visual{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.scene{min-height:150px;border-radius:14px;padding:16px;background:linear-gradient(135deg,#eef2ff,#faf5ff);border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between}.scene .big{font-size:45px}.ai{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.aiBox{border:1px solid var(--line);border-radius:14px;padding:16px}.status{padding:10px 12px;border-radius:10px;background:#f0fdf4;color:var(--good);font-size:13px}
 pre{white-space:pre-wrap;font:inherit}.expo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.expo-box{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}.expo-box .big{font-size:32px}.script{background:#f8faff;border-left:4px solid var(--accent);padding:14px;border-radius:10px}.timer-expo{font-size:28px;font-weight:900}@media(max-width:800px){.expo-grid{grid-template-columns:1fr}}
-
-.pdf-reader{margin-top:16px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#20242b;display:none}
-.reader-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.reader-left,.reader-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.reader-btn{background:#fff;border:1px solid var(--line);padding:8px 11px;border-radius:8px;font-weight:700;cursor:pointer}
-.reader-page{color:#fff;font-size:13px;padding:8px 12px;background:#303640;border-radius:8px}
-.reader-canvas{height:650px;background:#3a3f48;overflow:auto;text-align:center;padding:25px}
-.reader-canvas iframe{width:min(900px,100%);height:600px;border:0;background:#fff;box-shadow:0 4px 20px #0008}
-.reader-status{background:#f8faff;padding:10px 12px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 .hidden{display:none!important}
 @media(max-width:800px){.grid,.visual,.ai{grid-template-columns:1fr 1fr}.hero{display:block}}@media(max-width:520px){.grid,.visual,.ai{grid-template-columns:1fr}h1{font-size:28px}}
 </style>
@@ -49,21 +40,6 @@ pre{white-space:pre-wrap;font:inherit}.expo-grid{display:grid;grid-template-colu
 <input id="file" type="file" accept=".pdf,.docx,.txt,.md">
 </div>
 <div id="fileInfo" class="status hidden" style="margin-top:12px"></div>
-<div id="pdfReader" class="pdf-reader">
-  <div class="reader-toolbar">
-    <div class="reader-left">
-      <button class="reader-btn" id="readerZoomOut">−</button>
-      <button class="reader-btn" id="readerZoomIn">+</button>
-      <button class="reader-btn" id="readerFit">Ajustar</button>
-    </div>
-    <div class="reader-page">📄 <span id="readerName">Documento</span></div>
-    <div class="reader-right">
-      <button class="reader-btn" id="readerNew">Cambiar archivo</button>
-    </div>
-  </div>
-  <div class="reader-canvas"><iframe id="pdfFrame" title="Lector PDF"></iframe></div>
-  <div class="reader-status">Vista de lectura tipo visor PDF. Puedes desplazarte, ampliar y consultar el documento mientras estudias.</div>
-</div>
 </section>
 
 <section id="workspace" class="card hidden">
@@ -111,9 +87,13 @@ pre{white-space:pre-wrap;font:inherit}.expo-grid{display:grid;grid-template-colu
 
 <div id="simple" class="panel hidden">
 <span class="pill">Explicación simple</span><h2>De difícil → claro</h2>
-<p class="muted">Pega un fragmento o usa el texto extraído del documento para obtener una versión breve, una definición y un ejemplo.</p>
-<textarea id="simpleInput" placeholder="Pega aquí un concepto o fragmento..."></textarea>
-<button class="primary" id="simpleBtn">Simplificar</button><div id="simpleOut"></div>
+<p class="muted">Escribe un concepto o pregunta. La herramienta buscará primero información relacionada dentro del documento y después la reorganizará en lenguaje sencillo, sin limitarse a copiar el texto.</p>
+<textarea id="simpleInput" placeholder="Ejemplo: ¿Qué significa competitividad logística?"></textarea>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="primary" id="simpleBtn">🔎 Buscar en PDF y explicar</button>
+<button class="secondary" id="simpleAiBtn">🤖 Preparar explicación con IA</button>
+</div>
+<div id="simpleOut"></div>
 </div>
 
 <div id="visual" class="panel hidden">
@@ -198,36 +178,8 @@ $("drop").addEventListener("dragleave",()=>$("drop").classList.remove("drag"));
 $("drop").addEventListener("drop",e=>{e.preventDefault();$("drop").classList.remove("drag");if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0])});
 $("file").onchange=e=>{if(e.target.files[0])loadFile(e.target.files[0])};
 
-
-let currentPdfUrl=null,readerZoom=1;
-function openPdfReader(file){
-  if(currentPdfUrl)URL.revokeObjectURL(currentPdfUrl);
-  currentPdfUrl=URL.createObjectURL(file);
-  $("pdfFrame").src=currentPdfUrl;
-  $("readerName").textContent=file.name;
-  $("pdfReader").style.display="block";
-  readerZoom=1;
-  $("pdfFrame").style.transform="scale(1)";
-  $("pdfFrame").style.transformOrigin="top center";
-}
-$("readerZoomIn").onclick=()=>{
- readerZoom=Math.min(1.5,readerZoom+0.1);
- $("pdfFrame").style.transform=`scale(${readerZoom})`;
- $("pdfFrame").style.width=`${100/readerZoom}%`;
-};
-$("readerZoomOut").onclick=()=>{
- readerZoom=Math.max(.7,readerZoom-.1);
- $("pdfFrame").style.transform=`scale(${readerZoom})`;
- $("pdfFrame").style.width=`${100/readerZoom}%`;
-};
-$("readerFit").onclick=()=>{
- readerZoom=1;$("pdfFrame").style.transform="scale(1)";$("pdfFrame").style.width="100%";
-};
-$("readerNew").onclick=()=>$("file").click();
-
 async function loadFile(file){
  fileName=file.name;
- if(file.type==="application/pdf" || file.name.toLowerCase().endsWith(".pdf")) openPdfReader(file);
  $("fileInfo").textContent="Cargando: "+fileName+"…";show($("fileInfo"));
  try{
   const ext=file.name.split(".").pop().toLowerCase();
@@ -247,100 +199,48 @@ async function loadFile(file){
   $("sourceText").value=sourceText;show($("workspace"));show($("source"));
   $("simpleInput").value=sourceText.slice(0,5000);
  }catch(err){
-  $("fileInfo").textContent="✓ PDF abierto en el lector. El visor funciona aunque la extracción automática de texto no esté disponible. Si el PDF es escaneado, necesitará OCR para convertir las imágenes en texto.";
+  $("fileInfo").textContent="No se pudo leer el archivo automáticamente: "+err.message+" Puedes pegar el texto en las herramientas de abajo.";
   show($("workspace"));show($("source"));$("sourceText").value="";
  }
 }
-function loadScript(src,module=false){
- return new Promise((res,rej)=>{
-   const s=document.createElement("script");
-   s.src=src;
-   s.async=true;
-   if(module)s.type="module";
-   s.onload=()=>res();
-   s.onerror=()=>rej(new Error("No se pudo cargar la biblioteca PDF."));
-   document.head.appendChild(s);
- });
-}
+function loadScript(src,module=false){return new Promise((res,rej)=>{let s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("No se pudo cargar la biblioteca"));if(module)s.type="module";document.head.appendChild(s)})}
 async function extractPDF(file){
-  // PDF.js 3.x classic build: avoids the ESM/fake-worker mismatch that caused
-  // "Cannot read properties of undefined (reading 'setup')".
-  if(!window.pdfjsLib){
-    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
-  }
-  if(!window.pdfjsLib) throw new Error("No se pudo cargar el lector PDF.");
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
-  const data = await file.arrayBuffer();
-  const loadingTask = window.pdfjsLib.getDocument({
-    data: new Uint8Array(data),
-    disableWorker: false
-  });
-  const pdf = await loadingTask.promise;
-  let pages = [];
-  for(let i=1;i<=pdf.numPages;i++){
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const text = content.items.map(item => item.str || "").join(" ");
-    pages.push(text);
-  }
-  return pages.join("\\n\\n");
+ // Carga PDF.js y configura explícitamente el worker para evitar:
+ // "No GlobalWorkerOptions.workerSrc specified".
+ if(!window.pdfjsLib){
+   await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+ }
+ if(!window.pdfjsLib) throw new Error("No se pudo cargar el lector PDF.");
+ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+ const data=await file.arrayBuffer();
+ const pdf=await pdfjsLib.getDocument({data}).promise;
+ let out=[];
+ for(let i=1;i<=pdf.numPages;i++){
+   const page=await pdf.getPage(i);
+   const content=await page.getTextContent();
+   out.push(content.items.map(x=>x.str).join(" "));
+ }
+ return out.join("\\n\\n");
 }
-
-function getInstruction(){
-  const el=document.getElementById("studyInstruction");
-  return el ? el.value.trim() : "";
-}
-function setInstructionStatus(message){
-  const box=document.getElementById("instructionStatus");
-  if(!box)return;
-  box.textContent=message;
-  box.classList.remove("hidden");
-}
-function applyStudyInstruction(){
-  const input=document.getElementById("studyInstruction");
-  if(!input)return;
-  const value=input.value.trim();
-  if(!value){
-    setInstructionStatus("Escribe primero qué necesitas hacer con el documento.");
-    input.focus();
-    return;
-  }
-  try{localStorage.setItem("feynmanStudyInstruction",value)}catch(e){}
-  setInstructionStatus("✓ Instrucción guardada. Ahora puedes usar las herramientas de estudio.");
-  // Give the instruction to the most relevant areas without changing the user's text.
-  const f=document.getElementById("feynmanInput");
-  const d=document.getElementById("dailyInput");
-  const s=document.getElementById("simpleInput");
-  const o=document.getElementById("expoObjective");
-  const low=value.toLowerCase();
-  if(f && (low.includes("feynman")||low.includes("examen")||low.includes("estudiar"))) f.value=value;
-  if(d && (low.includes("cotidian")||low.includes("ejemplo"))) d.value=value;
-  if(s && (low.includes("simple")||low.includes("explica"))) s.value=(window.sourceText||"").slice(0,5000);
-  if(o && (low.includes("expos")||low.includes("present"))) o.value=value;
-}
-function suggestStudyInstruction(){
-  const input=document.getElementById("studyInstruction");
-  if(!input)return;
-  const suggestions=[
-    "Necesito estudiar este documento para un examen. Explícamelo con Feynman, relaciónalo con situaciones cotidianas, crea tarjetas y después hazme un quiz.",
-    "Necesito preparar una exposición. Organiza las ideas principales, crea un guion sencillo, ejemplos cotidianos y preguntas que podrían hacerme.",
-    "Quiero memorizar este contenido. Identifica los conceptos esenciales y conviértelos en tarjetas de estudio tipo Anki.",
-    "Quiero crear una infografía y un mapa mental. Identifica el tema central, las ideas principales, subideas y una propuesta visual."
-  ];
-  input.value=suggestions[Math.floor(Math.random()*suggestions.length)];
-  setInstructionStatus("✓ Te propuse una instrucción. Puedes modificarla antes de aplicarla.");
-}
-(function initInstructionBox(){
-  const apply=document.getElementById("applyInstruction");
-  const suggest=document.getElementById("suggestInstruction");
-  if(apply)apply.addEventListener("click",applyStudyInstruction);
-  if(suggest)suggest.addEventListener("click",suggestStudyInstruction);
-  const saved=(()=>{try{return localStorage.getItem("feynmanStudyInstruction")||""}catch(e){return ""}})();
-  const input=document.getElementById("studyInstruction");
-  if(input && saved)input.value=saved;
-})();
+function getInstruction(){return ($("studyInstruction")?.value||"").trim();}
+$("suggestInstruction").onclick=()=>{
+ const s=[
+ "Necesito comprender este documento para un examen. Explícamelo con Feynman, ejemplos cotidianos, tarjetas y un quiz final.",
+ "Voy a exponer este tema. Resume las ideas principales, crea un guion sencillo, ejemplos cotidianos, una representación visual y preguntas posibles.",
+ "Quiero memorizar este contenido. Detecta los conceptos esenciales, crea tarjetas tipo Anki y comprueba mi aprendizaje.",
+ "Quiero crear una infografía y un mapa mental. Identifica el tema central, ideas principales, subideas y una propuesta visual."
+ ];
+ $("studyInstruction").value=s[Math.floor(Math.random()*s.length)];
+};
+$("applyInstruction").onclick=()=>{
+ const i=getInstruction();
+ if(!i){$("instructionStatus").textContent="Escribe primero qué necesitas lograr con el documento.";show($("instructionStatus"));return;}
+ localStorage.setItem("feynmanStudyInstruction",i);
+ $("instructionStatus").textContent="✓ Instrucción guardada. Ahora puedes usar las herramientas de estudio.";
+ show($("instructionStatus"));
+};
+const savedInstruction=localStorage.getItem("feynmanStudyInstruction");
+if(savedInstruction)$("studyInstruction").value=savedInstruction;
 
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".panel").forEach(x=>x.classList.add("hidden"));$(b.dataset.tab).classList.remove("hidden")});
 
@@ -353,12 +253,55 @@ $("dailyBtn").onclick=()=>{
  const t=$("dailyInput").value.trim()||"este concepto";
  $("dailyOut").innerHTML='<div class="result"><h3>🏠 Conexión cotidiana</h3><p>Busca una situación real donde aparezcan las mismas relaciones que en <b>'+escapeHtml(t.slice(0,180))+'</b>.</p><p><b>Plantilla:</b> situación cotidiana → concepto → qué ocurre → por qué ocurre → qué decisión tomarías.</p><p><b>Ejemplo de contexto:</b> una compra en línea, organizar una tarea universitaria, pedir comida, viajar, administrar el tiempo o distribuir un presupuesto.</p></div>';
 };
+function normalizeWords(s){
+ return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9áéíóúüñ\s]/gi," ").split(/\s+/).filter(w=>w.length>2);
+}
+function findRelevantPassage(query){
+ const text=(sourceText||"").replace(/\s+/g," ").trim();
+ if(!text)return "";
+ const terms=normalizeWords(query).filter(w=>!["que","como","para","una","uno","los","las","del","por","con","este","esta","qué","cual","cuales"].includes(w));
+ const sentences=text.split(/(?<=[.!?])\s+/);
+ let ranked=sentences.map((s,i)=>{
+   const words=normalizeWords(s);let score=0;
+   terms.forEach(t=>{if(words.includes(t))score+=2;else if(words.some(w=>w.includes(t)||t.includes(w)))score+=1});
+   return {s,i,score};
+ }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+ if(!ranked.length)return text.slice(0,1800);
+ return ranked.slice(0,6).sort((a,b)=>a.i-b.i).map(x=>x.s).join(" ");
+}
+function simplifySourceText(passage,query){
+ let s=passage.replace(/\s+/g," ").trim();
+ // Light linguistic transformation: remove citation-like parentheticals and make structure clearer,
+ // while preserving the meaning and terminology of the source.
+ s=s.replace(/\([^)]{0,120}\)/g,"").replace(/\s+/g," ").trim();
+ const key=query.replace(/\?/g,"").trim();
+ return {key:key||"el concepto",text:s.slice(0,2200)};
+}
 $("simpleBtn").onclick=()=>{
- const t=$("simpleInput").value.trim()||sourceText.slice(0,3000);
- if(!t){$("simpleOut").innerHTML='<div class="result">Carga un documento o pega un concepto.</div>';return}
- const first=t.replace(/\s+/g," ").slice(0,650);
- $("simpleOut").innerHTML='<div class="result"><h3>💡 En palabras simples</h3><p>'+escapeHtml(first)+(t.length>650?"…":"")+'</p><p><b>Definición breve:</b> ¿Qué es? → dilo en una sola frase.</p><p><b>Ejemplo:</b> piensa en una situación que puedas observar o experimentar.</p><p><b>Comprobación:</b> explica la idea sin copiar el texto original.</p></div>';
+ const query=$("simpleInput").value.trim();
+ if(!query){$("simpleOut").innerHTML='<div class="result">Escribe primero el concepto o la pregunta que quieres entender.</div>';return;}
+ const passage=findRelevantPassage(query);
+ if(!passage){$("simpleOut").innerHTML='<div class="result">No hay texto del PDF disponible. Sube un documento con texto o pega el contenido.</div>';return;}
+ const r=simplifySourceText(passage,query);
+ $("simpleOut").innerHTML='<div class="result"><h3>💡 Explicación sencilla basada en tu PDF</h3>'+
+ '<p><b>Concepto:</b> '+escapeHtml(r.key)+'</p>'+
+ '<p><b>Explicado de otra manera:</b> '+escapeHtml(r.text)+'</p>'+
+ '<p><b>En palabras más fáciles:</b> La idea principal es entender qué significa el concepto, cómo funciona y por qué importa, usando las ideas que aparecen en el documento.</p>'+
+ '<p><b>Ejemplo cotidiano:</b> busca una situación de compras, universidad, casa, transporte o trabajo donde puedas observar esa misma idea.</p>'+
+ '<details><summary><b>📖 Ver fragmento encontrado en el PDF</b></summary><p class="muted">'+escapeHtml(passage)+'</p></details>'+
+ '<p class="muted">Nota: esta explicación parte del contenido encontrado en tu documento; no sustituye el texto original.</p></div>';
 };
+$("simpleAiBtn").onclick=()=>{
+ const query=$("simpleInput").value.trim();
+ if(!query){$("simpleOut").innerHTML='<div class="result">Escribe primero el concepto o pregunta.</div>';return;}
+ const passage=findRelevantPassage(query);
+ if(!passage){$("simpleOut").innerHTML='<div class="result">Sube primero un PDF con texto para preparar la explicación.</div>';return;}
+ const prompt=`Usa SOLO el fragmento del documento que aparece abajo. Explica "${query}" en español claro, sin copiar literalmente. Conserva los conceptos importantes del documento. Organiza la respuesta en: 1) qué significa, 2) explicación paso a paso, 3) ejemplo cotidiano, 4) analogía fácil, 5) qué debería recordar para un examen. Si el fragmento no permite responder, dilo explícitamente y no inventes información.\\n\\nFRAGMENTO DEL PDF:\\n${passage}`;
+ navigator.clipboard?.writeText(prompt).catch(()=>{});
+ window.open("https://chatgpt.com/","_blank","noopener");
+ $("simpleOut").innerHTML='<div class="result"><h3>🤖 Explicación con IA preparada</h3><p>Busqué primero el contenido relacionado dentro de tu PDF y preparé un prompt con ese fragmento. El prompt fue copiado; pégalo en la conversación que se abrió.</p><details><summary>Ver prompt</summary><pre>'+escapeHtml(prompt)+'</pre></details></div>';
+};
+
 $("makeQuiz").onclick=()=>{
  const base=(sourceText||$("simpleInput").value).replace(/\s+/g," ").trim();
  if(!base){$("quizOut").innerHTML='<div class="result">Carga un documento primero.</div>';return}
