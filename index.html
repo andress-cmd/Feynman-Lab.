@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feynman Lab — Aprende desde tus documentos</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#182230;--muted:#667085;--line:#dfe5ee;--accent:#315efb;--accent2:#7c3aed;--soft:#eef3ff;--good:#15803d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+header{background:linear-gradient(135deg,#172554,#4c1d95);color:#fff;padding:28px 18px}.wrap{max-width:1100px;margin:auto}
+.logo{font-weight:800;letter-spacing:.06em;font-size:12px;opacity:.9}h1{font-size:34px;margin:5px 0}h2{margin:0 0 10px}h3{margin:0 0 7px}.hero{display:flex;justify-content:space-between;gap:20px;align-items:center}.hero p{max-width:720px;opacity:.9}
+main{padding:20px 0 45px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 5px 20px #1720330b}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.feature{padding:17px;border:1px solid var(--line);border-radius:15px;background:#fff}.ico{font-size:27px;margin-bottom:8px}
+.drop{border:2px dashed #b9c7e8;border-radius:16px;padding:28px;text-align:center;background:#f8faff;cursor:pointer}.drop.drag{background:var(--soft);border-color:var(--accent)}
+input[type=file]{display:none}button{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}.primary{background:var(--accent);color:#fff}.secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}.danger{background:#fff;border:1px solid #f0b4b4;color:#b42318}
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px}.tab{background:#fff;border:1px solid var(--line)}.tab.active{background:var(--soft);border-color:#9ab0ff;color:#2148c7}
+.pill{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}.muted{color:var(--muted)}
+textarea{width:100%;min-height:160px;border:1px solid var(--line);border-radius:12px;padding:13px;resize:vertical;font:inherit}
+.result{background:#fbfcff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:12px}.result h3{color:#1f3fa8}.visual{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.scene{min-height:150px;border-radius:14px;padding:16px;background:linear-gradient(135deg,#eef2ff,#faf5ff);border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between}.scene .big{font-size:45px}.ai{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.aiBox{border:1px solid var(--line);border-radius:14px;padding:16px}.status{padding:10px 12px;border-radius:10px;background:#f0fdf4;color:var(--good);font-size:13px}
+pre{white-space:pre-wrap;font:inherit}.expo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.expo-box{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}.expo-box .big{font-size:32px}.script{background:#f8faff;border-left:4px solid var(--accent);padding:14px;border-radius:10px}.timer-expo{font-size:28px;font-weight:900}@media(max-width:800px){.expo-grid{grid-template-columns:1fr}}
+
+.pdf-reader{margin-top:16px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#20242b;display:none}
+.reader-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.reader-left,.reader-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.reader-btn{background:#fff;border:1px solid var(--line);padding:8px 11px;border-radius:8px;font-weight:700;cursor:pointer}
+.reader-page{color:#fff;font-size:13px;padding:8px 12px;background:#303640;border-radius:8px}
+.reader-canvas{height:650px;background:#3a3f48;overflow:auto;text-align:center;padding:25px}
+.reader-canvas iframe{width:min(900px,100%);height:600px;border:0;background:#fff;box-shadow:0 4px 20px #0008}
+.reader-status{background:#f8faff;padding:10px 12px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.hidden{display:none!important}
+@media(max-width:800px){.grid,.visual,.ai{grid-template-columns:1fr 1fr}.hero{display:block}}@media(max-width:520px){.grid,.visual,.ai{grid-template-columns:1fr}h1{font-size:28px}}
+</style>
+</head>
+<body>
+<header><div class="wrap hero">
+<div><div class="logo">FEYNMAN LAB</div><h1>Aprende desde cualquier documento</h1><p>Sube un PDF, Word, texto o material de clase y conviértelo en explicaciones simples, ejemplos cotidianos, imágenes conceptuales y preguntas para comprobar si realmente lo entendiste.</p></div>
+<div style="font-size:70px">🧠📚</div>
+</div></header>
+
+<main class="wrap">
+<section class="card">
+<h2>1. Sube tu material</h2>
+<p class="muted">El análisis se construye a partir del contenido que cargues. Para PDF y DOCX esta versión usa lectura en el navegador.</p>
+<div id="drop" class="drop">
+<div style="font-size:42px">📄⬆️</div>
+<h3>Arrastra tu archivo aquí</h3>
+<p class="muted">PDF · DOCX · TXT · MD</p>
+<button class="primary" id="choose">Seleccionar documento</button>
+<input id="file" type="file" accept=".pdf,.docx,.txt,.md">
+</div>
+<div id="fileInfo" class="status hidden" style="margin-top:12px"></div>
+<div id="pdfReader" class="pdf-reader">
+  <div class="reader-toolbar">
+    <div class="reader-left">
+      <button class="reader-btn" id="readerZoomOut">−</button>
+      <button class="reader-btn" id="readerZoomIn">+</button>
+      <button class="reader-btn" id="readerFit">Ajustar</button>
+    </div>
+    <div class="reader-page">📄 <span id="readerName">Documento</span></div>
+    <div class="reader-right">
+      <button class="reader-btn" id="readerNew">Cambiar archivo</button>
+    </div>
+  </div>
+  <div class="reader-canvas"><iframe id="pdfFrame" title="Lector PDF"></iframe></div>
+  <div class="reader-status">Vista de lectura tipo visor PDF. Puedes desplazarte, ampliar y consultar el documento mientras estudias.</div>
+</div>
+</section>
+
+<section id="workspace" class="card hidden">
+<div class="card" style="margin-top:0;background:linear-gradient(135deg,#f8faff,#fbf7ff);border-color:#cfd8ff">
+<span class="pill">Personaliza tu estudio</span>
+<h2>⚙️ ¿Qué necesitas hacer con este documento?</h2>
+<p class="muted">Escribe una instrucción sencilla. Las herramientas usarán esta indicación para orientar automáticamente el estudio.</p>
+<textarea id="studyInstruction" style="min-height:110px" placeholder="Ejemplo: Necesito estudiar este tema para un examen. Explícamelo con Feynman, relaciónalo con situaciones cotidianas, crea tarjetas y después hazme un quiz."></textarea>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+<button class="primary" id="applyInstruction">Aplicar instrucciones</button>
+<button class="secondary" id="suggestInstruction">✨ Sugerirme una instrucción</button>
+</div>
+<div id="instructionStatus" class="status hidden" style="margin-top:10px"></div>
+</div>
+<div class="tabs">
+<button class="tab active" data-tab="feynman">🧠 Feynman</button>
+<button class="tab" data-tab="daily">🏠 Vida cotidiana</button>
+<button class="tab" data-tab="simple">💡 Explicación simple</button>
+<button class="tab" data-tab="visual">🖼️ Visual</button>
+<button class="tab" data-tab="quiz">🎯 Comprueba</button>
+<button class="tab" data-tab="expo">🎤 Exposición</button>
+<button class="tab" data-tab="ai">🤖 IA</button>
+</div>
+
+<div id="feynman" class="panel">
+<span class="pill">Técnica Feynman</span><h2>Explica para entender</h2>
+<p class="muted">La herramienta organiza el material en cuatro pasos: identificar el concepto, explicarlo con palabras sencillas, detectar vacíos y volver a explicarlo mejor.</p>
+<div class="grid">
+<div class="feature"><div class="ico">1️⃣</div><h3>Identifica</h3><p>¿Cuál es la idea principal?</p></div>
+<div class="feature"><div class="ico">2️⃣</div><h3>Explica</h3><p>Como si se lo contaras a alguien que no conoce el tema.</p></div>
+<div class="feature"><div class="ico">3️⃣</div><h3>Detecta</h3><p>Marca palabras o partes que todavía no puedes explicar.</p></div>
+<div class="feature"><div class="ico">4️⃣</div><h3>Simplifica</h3><p>Reescribe usando ejemplos y lenguaje claro.</p></div>
+</div>
+<textarea id="feynmanInput" placeholder="Escribe aquí tu explicación del tema. Luego pulsa Analizar con Feynman."></textarea>
+<button class="primary" id="feynmanBtn">Analizar mi explicación</button>
+<div id="feynmanOut"></div>
+</div>
+
+<div id="daily" class="panel hidden">
+<span class="pill">Conexión cotidiana</span><h2>Conecta el concepto con tu vida</h2>
+<p class="muted">Busca una situación que puedas observar en casa, universidad, trabajo, transporte, compras o redes.</p>
+<textarea id="dailyInput" placeholder="Ejemplo: 'Quiero relacionar este concepto con algo que me pase cuando compro por internet...'"></textarea>
+<button class="primary" id="dailyBtn">Crear conexión</button><div id="dailyOut"></div>
+</div>
+
+<div id="simple" class="panel hidden">
+<span class="pill">Explicación simple</span><h2>De difícil → claro</h2>
+<p class="muted">Pega un fragmento o usa el texto extraído del documento para obtener una versión breve, una definición y un ejemplo.</p>
+<textarea id="simpleInput" placeholder="Pega aquí un concepto o fragmento..."></textarea>
+<button class="primary" id="simpleBtn">Simplificar</button><div id="simpleOut"></div>
+</div>
+
+<div id="visual" class="panel hidden">
+<span class="pill">Representación visual</span><h2>Aprende con imágenes conceptuales</h2>
+<p class="muted">Estas tarjetas convierten las ideas en escenas fáciles de recordar.</p>
+<div class="visual">
+<div class="scene"><div class="big">📦➡️🏠</div><h3>Proceso</h3><p>Entrada → transformación → resultado.</p></div>
+<div class="scene"><div class="big">🧩🧩🧩</div><h3>Relación</h3><p>Partes conectadas para formar un sistema.</p></div>
+<div class="scene"><div class="big">💭➡️💬</div><h3>Feynman</h3><p>Si puedes explicarlo con claridad, lo comprendes mejor.</p></div>
+</div>
+<div class="result"><b>Idea para recordar:</b> convierte cada concepto abstracto en una escena que puedas imaginar.</div>
+</div>
+
+<div id="quiz" class="panel hidden">
+<span class="pill">Recuperación activa</span><h2>Comprueba si realmente aprendiste</h2>
+<p class="muted">Crea preguntas a partir del contenido cargado y respóndelas sin mirar.</p>
+<button class="primary" id="makeQuiz">Generar preguntas</button><div id="quizOut"></div>
+</div>
+
+<div id="expo" class="panel hidden">
+<span class="pill">Modo exposición</span>
+<h2>🎤 Prepara y practica tu exposición</h2>
+<p class="muted">Convierte el contenido del documento en una guía para exponer: inicio, ideas clave, ejemplo, conclusión y posibles preguntas del profesor.</p>
+
+<div class="expo-grid">
+<div class="expo-box"><div class="big">🎯</div><h3>Objetivo</h3><p>Define en una frase qué debe comprender el público al terminar.</p><textarea id="expoObjective" style="min-height:90px" placeholder="¿Qué quiero que entiendan?"></textarea></div>
+<div class="expo-box"><div class="big">🗣️</div><h3>Guion</h3><p>Organiza lo que vas a decir sin memorizar párrafos completos.</p><textarea id="expoScript" style="min-height:90px" placeholder="Escribe tu explicación..."></textarea></div>
+</div>
+
+<div class="card" style="margin-left:0;margin-right:0">
+<h3>⏱️ Practica el tiempo</h3>
+<p class="muted">Escribe los minutos disponibles y practica siguiendo las secciones.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+<input id="expoMinutes" type="number" min="1" max="60" value="5" style="width:110px;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:16px">
+<button class="primary" id="expoStart">Iniciar práctica</button>
+<button class="secondary" id="expoStop">Detener</button>
+<span class="timer-expo" id="expoTimer">05:00</span>
+</div>
+</div>
+
+<div class="grid">
+<div class="feature"><div class="ico">1️⃣</div><h3>Inicio</h3><p>Presenta el tema y explica por qué es importante.</p></div>
+<div class="feature"><div class="ico">2️⃣</div><h3>Desarrollo</h3><p>Explica 2–4 ideas principales con lenguaje sencillo.</p></div>
+<div class="feature"><div class="ico">3️⃣</div><h3>Ejemplo</h3><p>Relaciona el concepto con una situación cotidiana.</p></div>
+<div class="feature"><div class="ico">4️⃣</div><h3>Cierre</h3><p>Resume y deja una idea final que se pueda recordar.</p></div>
+</div>
+
+<button class="primary" id="expoGenerate">Generar guía de exposición</button>
+<div id="expoOut"></div>
+
+<div class="result">
+<h3>❓ Preguntas que podrían hacerte</h3>
+<textarea id="expoQuestions" placeholder="Escribe aquí preguntas del profesor o compañeros y practica tus respuestas..."></textarea>
+</div>
+</div>
+<div id="ai" class="panel hidden">
+<span class="pill">Asistentes de IA</span><h2>Trabaja con IA</h2>
+<p class="muted">Puedes preparar un prompt con tu material y abrirlo en un asistente. Para una integración por API totalmente automática se necesita un backend seguro con las claves de cada servicio.</p>
+<div class="ai">
+<div class="aiBox"><div class="ico">🤖</div><h3>ChatGPT</h3><p class="muted">Preparar una sesión Feynman.</p><button class="primary" data-ai="chatgpt">Abrir con prompt</button></div>
+<div class="aiBox"><div class="ico">🟣</div><h3>Claude</h3><p class="muted">Analizar y simplificar el material.</p><button class="primary" data-ai="claude">Abrir con prompt</button></div>
+<div class="aiBox"><div class="ico">✨</div><h3>Otra IA</h3><p class="muted">Copiar el prompt para usarlo donde quieras.</p><button class="secondary" id="copyPrompt">Copiar prompt</button></div>
+</div>
+<div id="promptStatus" class="status hidden" style="margin-top:12px"></div>
+</div>
+</section>
+
+<section id="source" class="card hidden">
+<h2>📚 Contenido detectado</h2><p class="muted">Este texto es la base local para los ejercicios de estudio.</p>
+<textarea id="sourceText" readonly></textarea>
+</section>
+</main>
+
+<script>
+let sourceText="",fileName="";
+const $=id=>document.getElementById(id);
+function show(el){el.classList.remove("hidden")}function hide(el){el.classList.add("hidden")}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+$("choose").onclick=()=>$("file").click();
+$("drop").addEventListener("dragover",e=>{e.preventDefault();$("drop").classList.add("drag")});
+$("drop").addEventListener("dragleave",()=>$("drop").classList.remove("drag"));
+$("drop").addEventListener("drop",e=>{e.preventDefault();$("drop").classList.remove("drag");if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0])});
+$("file").onchange=e=>{if(e.target.files[0])loadFile(e.target.files[0])};
+
+
+let currentPdfUrl=null,readerZoom=1;
+function openPdfReader(file){
+  if(currentPdfUrl)URL.revokeObjectURL(currentPdfUrl);
+  currentPdfUrl=URL.createObjectURL(file);
+  $("pdfFrame").src=currentPdfUrl;
+  $("readerName").textContent=file.name;
+  $("pdfReader").style.display="block";
+  readerZoom=1;
+  $("pdfFrame").style.transform="scale(1)";
+  $("pdfFrame").style.transformOrigin="top center";
+}
+$("readerZoomIn").onclick=()=>{
+ readerZoom=Math.min(1.5,readerZoom+0.1);
+ $("pdfFrame").style.transform=`scale(${readerZoom})`;
+ $("pdfFrame").style.width=`${100/readerZoom}%`;
+};
+$("readerZoomOut").onclick=()=>{
+ readerZoom=Math.max(.7,readerZoom-.1);
+ $("pdfFrame").style.transform=`scale(${readerZoom})`;
+ $("pdfFrame").style.width=`${100/readerZoom}%`;
+};
+$("readerFit").onclick=()=>{
+ readerZoom=1;$("pdfFrame").style.transform="scale(1)";$("pdfFrame").style.width="100%";
+};
+$("readerNew").onclick=()=>$("file").click();
+
+async function loadFile(file){
+ fileName=file.name;
+ if(file.type==="application/pdf" || file.name.toLowerCase().endsWith(".pdf")) openPdfReader(file);
+ $("fileInfo").textContent="Cargando: "+fileName+"…";show($("fileInfo"));
+ try{
+  const ext=file.name.split(".").pop().toLowerCase();
+  if(ext==="txt"||ext==="md"){sourceText=await file.text()}
+  else if(ext==="pdf"){
+   if(!window.pdfjsLib){await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs",true)}
+   // Fallback: use browser text if a PDF parser is unavailable.
+   if(!window.pdfjsLib) throw new Error("No se pudo cargar el lector PDF");
+   sourceText=await extractPDF(file);
+  } else if(ext==="docx"){
+   await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js");
+   const ab=await file.arrayBuffer();const r=await mammoth.extractRawText({arrayBuffer:ab});sourceText=r.value;
+  } else throw new Error("Formato no compatible");
+  sourceText=sourceText.trim();
+  if(!sourceText)throw new Error("No se encontró texto extraíble en el documento.");
+  $("fileInfo").textContent="✓ "+fileName+" cargado. "+sourceText.length.toLocaleString("es-CO")+" caracteres detectados.";
+  $("sourceText").value=sourceText;show($("workspace"));show($("source"));
+  $("simpleInput").value=sourceText.slice(0,5000);
+ }catch(err){
+  $("fileInfo").textContent="✓ PDF abierto en el lector. El visor funciona aunque la extracción automática de texto no esté disponible. Si el PDF es escaneado, necesitará OCR para convertir las imágenes en texto.";
+  show($("workspace"));show($("source"));$("sourceText").value="";
+ }
+}
+function loadScript(src,module=false){
+ return new Promise((res,rej)=>{
+   const s=document.createElement("script");
+   s.src=src;
+   s.async=true;
+   if(module)s.type="module";
+   s.onload=()=>res();
+   s.onerror=()=>rej(new Error("No se pudo cargar la biblioteca PDF."));
+   document.head.appendChild(s);
+ });
+}
+async function extractPDF(file){
+  // PDF.js 3.x classic build: avoids the ESM/fake-worker mismatch that caused
+  // "Cannot read properties of undefined (reading 'setup')".
+  if(!window.pdfjsLib){
+    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+  }
+  if(!window.pdfjsLib) throw new Error("No se pudo cargar el lector PDF.");
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  const data = await file.arrayBuffer();
+  const loadingTask = window.pdfjsLib.getDocument({
+    data: new Uint8Array(data),
+    disableWorker: false
+  });
+  const pdf = await loadingTask.promise;
+  let pages = [];
+  for(let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const text = content.items.map(item => item.str || "").join(" ");
+    pages.push(text);
+  }
+  return pages.join("\\n\\n");
+}
+
+function getInstruction(){
+  const el=document.getElementById("studyInstruction");
+  return el ? el.value.trim() : "";
+}
+function setInstructionStatus(message){
+  const box=document.getElementById("instructionStatus");
+  if(!box)return;
+  box.textContent=message;
+  box.classList.remove("hidden");
+}
+function applyStudyInstruction(){
+  const input=document.getElementById("studyInstruction");
+  if(!input)return;
+  const value=input.value.trim();
+  if(!value){
+    setInstructionStatus("Escribe primero qué necesitas hacer con el documento.");
+    input.focus();
+    return;
+  }
+  try{localStorage.setItem("feynmanStudyInstruction",value)}catch(e){}
+  setInstructionStatus("✓ Instrucción guardada. Ahora puedes usar las herramientas de estudio.");
+  // Give the instruction to the most relevant areas without changing the user's text.
+  const f=document.getElementById("feynmanInput");
+  const d=document.getElementById("dailyInput");
+  const s=document.getElementById("simpleInput");
+  const o=document.getElementById("expoObjective");
+  const low=value.toLowerCase();
+  if(f && (low.includes("feynman")||low.includes("examen")||low.includes("estudiar"))) f.value=value;
+  if(d && (low.includes("cotidian")||low.includes("ejemplo"))) d.value=value;
+  if(s && (low.includes("simple")||low.includes("explica"))) s.value=(window.sourceText||"").slice(0,5000);
+  if(o && (low.includes("expos")||low.includes("present"))) o.value=value;
+}
+function suggestStudyInstruction(){
+  const input=document.getElementById("studyInstruction");
+  if(!input)return;
+  const suggestions=[
+    "Necesito estudiar este documento para un examen. Explícamelo con Feynman, relaciónalo con situaciones cotidianas, crea tarjetas y después hazme un quiz.",
+    "Necesito preparar una exposición. Organiza las ideas principales, crea un guion sencillo, ejemplos cotidianos y preguntas que podrían hacerme.",
+    "Quiero memorizar este contenido. Identifica los conceptos esenciales y conviértelos en tarjetas de estudio tipo Anki.",
+    "Quiero crear una infografía y un mapa mental. Identifica el tema central, las ideas principales, subideas y una propuesta visual."
+  ];
+  input.value=suggestions[Math.floor(Math.random()*suggestions.length)];
+  setInstructionStatus("✓ Te propuse una instrucción. Puedes modificarla antes de aplicarla.");
+}
+(function initInstructionBox(){
+  const apply=document.getElementById("applyInstruction");
+  const suggest=document.getElementById("suggestInstruction");
+  if(apply)apply.addEventListener("click",applyStudyInstruction);
+  if(suggest)suggest.addEventListener("click",suggestStudyInstruction);
+  const saved=(()=>{try{return localStorage.getItem("feynmanStudyInstruction")||""}catch(e){return ""}})();
+  const input=document.getElementById("studyInstruction");
+  if(input && saved)input.value=saved;
+})();
+
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".panel").forEach(x=>x.classList.add("hidden"));$(b.dataset.tab).classList.remove("hidden")});
+
+$("feynmanBtn").onclick=()=>{
+ const t=$("feynmanInput").value.trim()||sourceText.slice(0,3000);
+ if(!t){$("feynmanOut").innerHTML='<div class="result">Escribe una explicación o carga un documento primero.</div>';return}
+ $("feynmanOut").innerHTML='<div class="result"><h3>🔎 Revisión Feynman</h3><p><b>Idea central:</b> '+escapeHtml(t.slice(0,450))+(t.length>450?"…":"")+'</p><p><b>Pregunta clave:</b> ¿Podrías explicarlo sin usar palabras técnicas?</p><p><b>Vacío que debes revisar:</b> identifica qué parte no puedes explicar con un ejemplo propio.</p><p><b>Siguiente paso:</b> vuelve a escribirlo como si se lo explicaras a un estudiante más joven.</p></div>';
+};
+$("dailyBtn").onclick=()=>{
+ const t=$("dailyInput").value.trim()||"este concepto";
+ $("dailyOut").innerHTML='<div class="result"><h3>🏠 Conexión cotidiana</h3><p>Busca una situación real donde aparezcan las mismas relaciones que en <b>'+escapeHtml(t.slice(0,180))+'</b>.</p><p><b>Plantilla:</b> situación cotidiana → concepto → qué ocurre → por qué ocurre → qué decisión tomarías.</p><p><b>Ejemplo de contexto:</b> una compra en línea, organizar una tarea universitaria, pedir comida, viajar, administrar el tiempo o distribuir un presupuesto.</p></div>';
+};
+$("simpleBtn").onclick=()=>{
+ const t=$("simpleInput").value.trim()||sourceText.slice(0,3000);
+ if(!t){$("simpleOut").innerHTML='<div class="result">Carga un documento o pega un concepto.</div>';return}
+ const first=t.replace(/\s+/g," ").slice(0,650);
+ $("simpleOut").innerHTML='<div class="result"><h3>💡 En palabras simples</h3><p>'+escapeHtml(first)+(t.length>650?"…":"")+'</p><p><b>Definición breve:</b> ¿Qué es? → dilo en una sola frase.</p><p><b>Ejemplo:</b> piensa en una situación que puedas observar o experimentar.</p><p><b>Comprobación:</b> explica la idea sin copiar el texto original.</p></div>';
+};
+$("makeQuiz").onclick=()=>{
+ const base=(sourceText||$("simpleInput").value).replace(/\s+/g," ").trim();
+ if(!base){$("quizOut").innerHTML='<div class="result">Carga un documento primero.</div>';return}
+ const topic=base.slice(0,180);
+ $("quizOut").innerHTML='<div class="result"><h3>🎯 Mini-quiz de recuperación</h3><p><b>1.</b> ¿Cuál es la idea principal del fragmento?</p><p><b>2.</b> Explica esa idea con tus propias palabras.</p><p><b>3.</b> Da un ejemplo de la vida cotidiana.</p><p><b>4.</b> ¿Qué parte todavía te genera dudas?</p><p class="muted">Fragmento base: '+escapeHtml(topic)+'…</p></div>';
+};
+let expoInterval=null,expoRemaining=300;
+function updateExpoTimer(){
+ const m=Math.floor(expoRemaining/60),s=expoRemaining%60;
+ $("expoTimer").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
+$("expoStart").onclick=()=>{
+ clearInterval(expoInterval);
+ let mins=Math.max(1,Math.min(60,parseInt($("expoMinutes").value)||5));
+ expoRemaining=mins*60;updateExpoTimer();
+ expoInterval=setInterval(()=>{
+   expoRemaining--;updateExpoTimer();
+   if(expoRemaining<=0){clearInterval(expoInterval);alert("⏰ Tiempo de exposición terminado.");}
+ },1000);
+};
+$("expoStop").onclick=()=>{clearInterval(expoInterval)};
+$("expoGenerate").onclick=()=>{
+ const text=(sourceText||$("simpleInput").value||"").replace(/\s+/g," ").trim();
+ if(!text){$("expoOut").innerHTML='<div class="result">Carga un documento o pega el contenido que vas a exponer.</div>';return}
+ const base=text.slice(0,1800);
+ $("expoOut").innerHTML='<div class="result"><h3>🎤 Guía lista para practicar</h3>'+
+ '<div class="script"><b>Inicio:</b> “Hoy voy a explicar el tema principal del material. Primero veremos qué significa, después cómo funciona y finalmente un ejemplo cotidiano.”</div>'+
+ '<p><b>1. Idea central:</b> '+escapeHtml(base.slice(0,420))+'…</p>'+
+ '<p><b>2. Explicación Feynman:</b> dilo con palabras que una persona que no conozca el tema pueda entender.</p>'+
+ '<p><b>3. Ejemplo cotidiano:</b> relaciona el concepto con una experiencia de la universidad, casa, compras, transporte, trabajo o vida diaria.</p>'+
+ '<p><b>4. Conclusión:</b> resume en una frase qué debe recordar el público.</p>'+
+ '<div class="script"><b>Consejo:</b> no memorices todo el texto. Memoriza el orden de las ideas y explica cada una con tus propias palabras.</div></div>';
+};
+function makePrompt(){
+ const text=(sourceText||$("simpleInput").value||"").slice(0,12000);
+ const instruction=getInstruction();
+ return `Actúa como tutor universitario. Usa SOLO el material proporcionado como base y no inventes información. Sigue esta necesidad del estudiante: ${instruction||"Ayúdame a comprender y estudiar el material."}. Aplica Feynman cuando sea pertinente: idea central, explicación sencilla, términos difíciles, ejemplo cotidiano, analogía visual, vacíos de comprensión y preguntas para comprobar aprendizaje. Material:\n\n${text}`
+}
+$("copyPrompt").onclick=async()=>{try{await navigator.clipboard.writeText(makePrompt());$("promptStatus").textContent="✓ Prompt copiado. Pégalo en la IA que prefieras.";show($("promptStatus"))}catch(e){$("promptStatus").textContent="Selecciona y copia el prompt desde el contenido de la página.";show($("promptStatus"))}};
+document.querySelectorAll("[data-ai]").forEach(b=>b.onclick=async()=>{
+ const prompt=makePrompt();
+ try{await navigator.clipboard.writeText(prompt)}catch(e){}
+ const url=b.dataset.ai==="chatgpt"?"https://chatgpt.com/": "https://claude.ai/";
+ window.open(url,"_blank","noopener");
+ $("promptStatus").textContent="✓ Prompt preparado y copiado. Pégalo en la conversación que se abrió.";show($("promptStatus"));
+});
+</script>
+</body>
+</html>
