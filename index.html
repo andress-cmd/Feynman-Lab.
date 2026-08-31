@@ -194,6 +194,40 @@ pre{white-space:pre-wrap;font:inherit}.expo-grid{display:grid;grid-template-colu
 let sourceText="",fileName="";
 const $=id=>document.getElementById(id);
 function show(el){el.classList.remove("hidden")}function hide(el){el.classList.add("hidden")}
+
+function normalizeWords(s){
+  return String(s||"").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9áéíóúüñ\s]/gi," ")
+    .split(/\s+/).filter(w=>w.length>2);
+}
+function findRelevantPassage(query){
+  const text=(sourceText||"").replace(/\s+/g," ").trim();
+  if(!text)return "";
+  const stop=new Set(["que","como","para","una","uno","los","las","del","por","con","este","esta","qué","cual","cuales","manera","corta","explicame","explica"]);
+  const terms=normalizeWords(query).filter(w=>!stop.has(w));
+  const sentences=text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  if(!terms.length)return sentences.slice(0,8).join(" ");
+  const ranked=sentences.map((s,i)=>{
+    const words=normalizeWords(s);
+    let score=0;
+    for(const t of terms){
+      if(words.includes(t))score+=3;
+      else if(words.some(w=>w.includes(t)||t.includes(w)))score+=1;
+    }
+    return {s,i,score};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+  if(!ranked.length)return text.slice(0,2200);
+  return ranked.slice(0,7).sort((a,b)=>a.i-b.i).map(x=>x.s).join(" ");
+}
+function simplifySourceText(passage,query){
+  const clean=String(passage||"").replace(/\s+/g," ").trim();
+  return {
+    key:String(query||"").trim()||"idea principal del documento",
+    text:clean.slice(0,3000)
+  };
+}
+
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 $("choose").onclick=()=>$("file").click();
 $("drop").addEventListener("dragover",e=>{e.preventDefault();$("drop").classList.add("drag")});
@@ -355,6 +389,10 @@ $("simpleBtn").onclick=()=>{
 };
 $("simpleAiBtn").onclick=async()=>{
  const query=$("simpleInput").value.trim()||"Explica la idea principal del documento";
+ if(!sourceText.trim()){
+   $("simpleOut").innerHTML='<div class="result">Sube primero el PDF y espera a que aparezca “PDF leído correctamente”.</div>';
+   return;
+ }
  const text=await askDirectAI("explicacion_simple",query);
  if(text)renderAIResult("simpleOut","💡 Explicación sencilla basada en tu PDF",text);
 };
